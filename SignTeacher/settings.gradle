@@ -1,0 +1,2 @@
+rootProject.name='SigninTeacher1'
+include ':app'
