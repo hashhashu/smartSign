@@ -13,6 +13,8 @@ public class Course {
         return CourseName;
     }
 
+    public void SetCourseName(String courseName){ this.CourseName =courseName;}
+
     public String getCourseTime() {
         return CourseTime;
     }

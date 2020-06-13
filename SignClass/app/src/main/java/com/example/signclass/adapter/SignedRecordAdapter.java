@@ -18,7 +18,7 @@ public class SignedRecordAdapter extends RecyclerView.Adapter<SignedRecordAdapte
     public SignedRecordAdapter(List<SignedRecord> courseList) {
         this.recordList = courseList;
     }
-
+    private View.OnClickListener mOnItemClickListener;
     @NonNull
     @Override
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -30,10 +30,15 @@ public class SignedRecordAdapter extends RecyclerView.Adapter<SignedRecordAdapte
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
         SignedRecord record = recordList.get(position);
-        holder.tv_location.setText(record.getSingedLocation());
+        holder.tv_location.setText("已签到:"+record.getSigned()+"/未签到:"+record.getNotsigned());
         holder.tv_time.setText(record.getSignedTime());
+
+
     }
 
+    public void setOnItemClickListener(View.OnClickListener onItemClickListener) {
+        mOnItemClickListener = onItemClickListener;
+    }
 
     @Override
     public int getItemCount() {
@@ -48,8 +53,8 @@ public class SignedRecordAdapter extends RecyclerView.Adapter<SignedRecordAdapte
             super(itemView);
             this.tv_time =itemView.findViewById(R.id.tv_time);
             this.tv_location = itemView.findViewById(R.id.tv_location);
+            itemView.setTag(this);
+            itemView.setOnClickListener(mOnItemClickListener);
         }
-
-
     }
 }
