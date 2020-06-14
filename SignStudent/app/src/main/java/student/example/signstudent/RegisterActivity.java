@@ -1,11 +1,16 @@
 package student.example.signstudent;
 
+import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.baidu.mapapi.model.LatLng;
 
 import org.json.JSONObject;
 
@@ -21,6 +26,7 @@ import java.net.URL;
 public class RegisterActivity extends AppCompatActivity {
     private EditText _etSname,_etSex,_etSchool,_etSno,_etNumber,_etPsd;
     private Button _btnRegister;
+    private ImageView _imgRt;
 
 
     @Override
@@ -37,7 +43,13 @@ public class RegisterActivity extends AppCompatActivity {
         _etSno = (EditText)findViewById(R.id.et_son);
         _etNumber = (EditText)findViewById(R.id.et_number);
         _etPsd = (EditText)findViewById(R.id.et_password);
-
+        _imgRt = (ImageView)findViewById(R.id.img_rt1);
+        _imgRt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
 
         _btnRegister = (Button)findViewById(R.id.btn_register);
         _btnRegister.setOnClickListener(new View.OnClickListener() {
@@ -55,8 +67,8 @@ public class RegisterActivity extends AppCompatActivity {
                     sex = 1;
                 else
                     sex = 0;
-
-                sendRequestWithHttpURLConection("sregister","sqf",1,"浙江工商大学","1902010007","15968188846","11");
+                String type = "sregister";
+                sendRequestWithHttpURLConection(type,name,sex,school,no,number,psd);
             }
         });
     }
@@ -69,7 +81,7 @@ public class RegisterActivity extends AppCompatActivity {
                 BufferedReader reader = null;
                 try {
                     //获取HttpURLConnection实例，传入目标网络地址
-                    URL url = new URL("http://192.168.43.70");
+                    URL url = new URL("http://112.124.24.195");
                     connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("POST");
                     connection.setConnectTimeout(5000);
@@ -87,7 +99,7 @@ public class RegisterActivity extends AppCompatActivity {
                     json.put("number", number);
                     json.put("password", psd);
                     String jsonstr = json.toString();
-                    Toast.makeText(RegisterActivity.this, jsonstr, Toast.LENGTH_LONG).show();
+
                     OutputStream out = connection.getOutputStream();
                     BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out));
                     bw.write(jsonstr);
@@ -106,9 +118,15 @@ public class RegisterActivity extends AppCompatActivity {
                         in.close();
 
                         JSONObject rjson = new JSONObject(response.toString());
-                        Toast.makeText(RegisterActivity.this, rjson.toString(), Toast.LENGTH_LONG).show();
                         String result = rjson.getString("success");
-                        Toast.makeText(RegisterActivity.this, result, Toast.LENGTH_LONG).show();
+                        showResponse(result);
+                        Log.d("result",result);
+//                        if(result.equals("true")){
+//                            Toast.makeText(RegisterActivity.this, "注册成功", Toast.LENGTH_LONG).show();
+//                        }else{
+//                            Toast.makeText(RegisterActivity.this, "注册失败", Toast.LENGTH_LONG).show();
+//                        }
+                      //  Toast.makeText(RegisterActivity.this, result, Toast.LENGTH_LONG).show();
 
                     }
 
@@ -130,6 +148,21 @@ public class RegisterActivity extends AppCompatActivity {
         }).start();
 
 
+    }
+
+    private void showResponse(final String response){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                if(response.equals("true")){
+                    Toast.makeText(RegisterActivity.this,"注册成功！",Toast.LENGTH_LONG).show();
+                    finish();
+                }else{
+                    Toast.makeText(RegisterActivity.this,"该手机号以注册，请从新输入！",Toast.LENGTH_LONG).show();
+                }
+            }
+        });
     }
 
 
