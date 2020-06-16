@@ -23,15 +23,100 @@ class DateEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj) 
 
 app = Flask(__name__)
+
+# 设置允许的文件格式
+ALLOWED_EXTENSIONS = set(['txt','png', 'jpg', 'JPG', 'PNG', 'bmp'])
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+# 添加路由
+@app.route('/upload', methods=['POST', 'GET'])
+@cross_origin()
+def upload():
+    if request.method == 'POST':
+        # 通过file标签获取文件
+        f = request.files['file']
+        if not (f and allowed_file(f.filename)):
+            return jsonify({"error": 1001, "msg": "图片类型：png、PNG、jpg、JPG、bmp"})
+        # 当前文件所在路径
+        basepath = os.path.dirname(__file__)
+        # 一定要先创建该文件夹，不然会提示没有该路径
+        upload_path = os.path.join(basepath, 'static/', secure_filename(f.filename))
+        # 保存文件
+        f.save(upload_path)
+        db = pymysql.connect('localhost', dname, dpassword, dbase)
+        cursor = db.cursor()
+        status=200
+        cname=request.form['cname']
+        cursor.execute("select cno from course where cname='%s'"%(cname))
+        data=cursor.fetchone()
+        cno=data[0]
+        alreadyAdd=0
+        try:
+            studentInfo = open(upload_path, 'r')
+            for line in studentInfo:
+                if len(line)<=3:
+                    continue
+                content = ' '.join(line.split())
+                studentInfoI = content.split(' ')
+                print(line)
+                userNumber = studentInfoI[0]
+                userName = studentInfoI[1]
+                print(userNumber)
+                print(userName)
+                cursor.execute("select snumber from student where snumber='%s'" % (userNumber))
+                dataS = cursor.fetchall()
+                print(dataS)
+                if not dataS:
+                    try:
+                        cursor.execute("insert into student(snumber,sname) values ('%s','%s')"%(userNumber,userName))
+                        db.commit()
+                    except:
+                        status = 400
+                        result = {"success":"false","error":"insert  userInfo error"}
+                        break
+                cursor.execute("select snumber from sc where snumber='%s' and cno='%s'"%(userNumber,cno))
+                data=cursor.fetchone()
+                if not data:
+                    cursor.execute("insert into sc values ('%s','%s')"%(userNumber,cno))
+                    db.commit()
+            studentInfo.close()
+            result={"success":"true"}
+        except:
+            status=400
+            result={"success":"false","error":"file open error"}
+        db.close()
+        resp = Response(json.dumps(result), status=200,
+                            mimetype="application/json")
+        return resp
+    # 重新返回上传界面
+    else:
+        status=400
+        result={"success":"true"}
+        resp = Response(json.dumps(result), status=status,
+                            mimetype="application/json")
+        return resp
+
+
+
+
+@app.route('/jquery-1.7.2.min.js', methods=['GET', 'POST', 'OPTIONS'])
+@cross_origin()
+def hh():
+    if request.method == 'GET':
+        return send_file("jquery-1.7.2.min.js")
+
 @app.route('/', methods=['GET', 'POST', 'OPTIONS'])
 @cross_origin()
 def login():
 
     if request.method == 'GET':
+        # url=request.url
         return send_file("index.html")
     if request.method == 'POST':
         postData = json.loads(request.get_data().decode('utf-8'))
+        print(postData)
         command = postData['type']
+        print(command)
         status=200
         if command == "slogin":
             number = postData['number']
@@ -45,12 +130,12 @@ def login():
                 if data:
                     result={"success":"true"}
                 else:
-                    status=400
+                    # status=400
                     result = {"success":"false","error": "login wrong"}
             except:
-                status=400
-                result={"success":"false","error":"db select error"}
-            resp = Response(json.dumps(result), status=400,
+                # status=400
+                resule={"success":"false","error":"db select error"}
+            resp = Response(json.dumps(result), status=200,
                                 mimetype="application/json")
             db.close()
             return resp
@@ -92,7 +177,7 @@ def login():
                 status=400
                 result={"success":"false","error":"db select error"}
             db.close() 
-            resp = Response(json.dumps(result), status=status,
+            resp = Response(json.dumps(result), status=200,
                                 mimetype="application/json")
             return resp
         elif command=="sfetchCourse":
@@ -100,33 +185,68 @@ def login():
             db = pymysql.connect('localhost',dname, dpassword, dbase)
             cursor = db.cursor()
             courseList=list()
+            courseSort=list()
+            whatday=datetime.datetime.now().weekday()
+            whatday+=1
             try:
                 cursor.execute(
                 "select cno from sc where snumber='%s'" % (number))
+                num=0
                 for line in cursor.fetchall():
                     cno=line[0]
-                    cursor.execute("select cname,ctime,cstart,cend,csigntime,cnth from course where cno='%s'"%(cno))
+                    print(cno)
+                    cursor.execute("select cname,ctime,cstart,cend,cnth from course where cno='%s'"%(cno))
                     data=cursor.fetchone()
                     cname=data[0]
                     ctime=data[1]
                     cstart=data[2]
                     cend=data[3]
-                    csigntime=data[4]
-                    cnth=data[5]
-                    cursor.execute("select csigntimelast from coursesign where cno='%s' and cnth='%d'"%(cno,cnth))
+                    cnth=data[4]
+                    cursor.execute("select csigntimelast,csigntime from coursesign where cno='%s' and cnth='%s'"%(cno,cnth))
+                    data=cursor.fetchone()
+                    print(data)
+                    timelast=data[0]
+                    signstart=data[1]
+                    if not signstart:
+                        ongoing="false"
+                    else:
+                        signend=signstart+datetime.timedelta(minutes=timelast)
+                        now=datetime.datetime.now()
+                        print(now)
+                        print(signstart)
+                        print(signend)
+                        if now>=signstart and now<=signend:
+                            ongoing="true"
+                        else:
+                            ongoing="false"
+                    if ctime<whatday:
+                        newday=ctime-whatday+7
+                    else:
+                        newday=ctime-whatday
+                    if ongoing=="true":
+                        newday=0
+                    couorsesortalone=[newday,cstart,num]
+                    courseSort.append(couorsesortalone)
+                    num+=1
+                    cursor.execute("select cno from studentsign where cno='%s' and snumber='%s' and cnth='%d'"%(cno,number,cnth))
                     data=cursor.fetchone()
                     if data:
-                        timelast=data[0]
+                        signed=True
                     else:
-                        timelast=0
-                    coursealone={"name":cname,"time":ctime,"start":cstart,"end":cend,"signtime":csigntime,"SigntimeLast":timelast}
+                        signed=False
+                    coursealone={"name":cname,"time":ctime,"start":cstart,"end":cend,"ongoing":ongoing,"signed":signed,"cnth":cnth}
                     courseList.append(coursealone)
-                result={"success":"true","course":courseList}
+                coursesorted=sorted(courseSort,key=itemgetter(0,1))
+                coursenewlist=list()
+                for ele in coursesorted:
+                    index=ele[2]
+                    coursenewlist.append(courseList[index])
+                result={"success":"true","course":coursenewlist}
             except:
                 status=400
                 result={"success":"false","error":"maybe db error"}
             db.close() 
-            resp = Response(json.dumps(result), status=status,
+            resp = Response(json.dumps(result,cls=DateEncoder), status=200,
                                 mimetype="application/json")
             return resp
         elif command=="saddCourse":
@@ -157,7 +277,7 @@ def login():
                 status=400
                 result={"success":"false","error":"maybe db select error"}
             db.close()
-            resp = Response(json.dumps(result), status=status,
+            resp = Response(json.dumps(result), status=200,
                                 mimetype="application/json")
             return resp
         elif command=="sfetchSign":
@@ -167,19 +287,25 @@ def login():
             try:
                 cursor.execute("select cno,cnth from course where cname='%s'"%(course))
                 data=cursor.fetchone()
-                cno=data[0]
-                cnth=data[1]
-                cursor.execute("select csignposi,csigntime.csigntimelast from coursesign where cno='%s' and cnth='%d'"%(cno,cnth)%(cno,cnth))
-                data=cursor.fetchone()
-                csignposi=data[0]
-                csigntime=data[1]
-                csigntimelast=data[2]
-                result={"success":"true","position":csignposi,"time":csigntime,"timelast":csigntimelast}
+                if data:
+                    cno=data[0]
+                    cnth=data[1]
+                    cursor.execute("select csignposi,csigntime,csigntimelast from coursesign where cno='%s' and cnth='%d'"%(cno,cnth))
+                    data=cursor.fetchone()
+                    if data:
+                        csignposi=data[0]
+                        csigntime=data[1]
+                        csigntimelast=data[2]
+                        result={"success":"true","position":csignposi,"time":csigntime,"timelast":csigntimelast}
+                    else:
+                        result={"success":"false","error":"没有这次签到信息"}
+                else:
+                    result={"success":"false","error":"没有该课程"}
             except:
                 status=400
                 result={"success":"false","error":"maybe db select error"}
             db.close()
-            resp = Response(json.dumps(result), status=status,
+            resp = Response(json.dumps(result,cls=DateEncoder), status=200,
                                 mimetype="application/json")
             return resp
         elif command=="ssign":
@@ -192,16 +318,30 @@ def login():
             try:
                 cursor.execute("select cno,cnth from course where cname='%s'"%(course))
                 data=cursor.fetchone()
-                cno=data[0]
-                cnth=data[1]
-                cursor.execute("insert into studentsign(cno,snumber,cnth,csignetime) values ('%s','%s','%d','%s')"%(cno,number,cnth,now))
-                db.commit()
-                result={"success":"true"}
+                if data:
+                    cno=data[0]
+                    cnth=data[1]
+                    cursor.execute("select cno from studentsign where cno='%s' and snumber='%s' and cnth='%d'"%(cno,number,cnth))
+                    data=cursor.fetchone()
+                    if not data:
+                        cursor.execute("insert into studentsign(cno,snumber,cnth,csignetime) values ('%s','%s','%d','%s')"%(cno,number,cnth,now))
+                        db.commit()
+                        cursor.execute("select csigned,cnotsigned from coursesign where cno='%s' and cnth='%d'"%(cno,cnth))
+                        data=cursor.fetchone()
+                        csigned=data[0]+1
+                        cnotsigned=data[1]-1
+                        cursor.execute("update coursesign set csigned='%d',cnotsigned='%d' where cno='%s' and cnth='%d'"%(csigned,cnotsigned,cno,cnth))
+                        db.commit()
+                        result={"success":"true"}
+                    else:
+                        result={"success":"false","error":"already signed"}
+                else:
+                    result={"success":"false","error":"no this course"}
             except:
                 status=400
                 result={"success":"false","error":"maybe db select error"}
             db.close()
-            resp = Response(json.dumps(result), status=status,
+            resp = Response(json.dumps(result), status=200,
                                 mimetype="application/json")
             return resp
         elif command=="tlogin":
@@ -211,7 +351,7 @@ def login():
             cursor = db.cursor()
             result={"true":"success"}
             db.close()
-            resp = Response(json.dumps(result), status=status,
+            resp = Response(json.dumps(result), status=200,
                                 mimetype="application/json")
             return resp
         elif command=="tfetchCourse":
@@ -270,7 +410,7 @@ def login():
                 status=400
                 result={"success":"false","error":"maybe db select error"}
             db.close()
-            resp = Response(json.dumps(result), status=status,
+            resp = Response(json.dumps(result), status=200,
                                 mimetype="application/json")
             return resp
         elif command=="tfetchSign":
@@ -292,7 +432,7 @@ def login():
                 status=400
                 result={"success":"false","error":"maybe db select error"}
             db.close()
-            resp = Response(json.dumps(result,cls=DateEncoder), status=status,
+            resp = Response(json.dumps(result,cls=DateEncoder), status=200,
                                 mimetype="application/json")
             return resp
         elif command=="tfetchsignAlone":
@@ -326,7 +466,7 @@ def login():
                 status=400
                 result={"success":"false","error":"maybe db select error"}
             db.close()
-            resp = Response(json.dumps(result), status=status,
+            resp = Response(json.dumps(result), status=200,
                                 mimetype="application/json")
             return resp
         elif command=="tpushSign":
@@ -357,7 +497,7 @@ def login():
                 status=400
                 result={"success":"false","error":"maybe db select error"}
             db.close()
-            resp = Response(json.dumps(result), status=status,
+            resp = Response(json.dumps(result), status=200,
                                 mimetype="application/json")
             return resp
         elif command=="tapplylist":
@@ -384,7 +524,7 @@ def login():
                 status=400
                 result={"success":"false","error":"maybe db select error"}
             db.close()
-            resp = Response(json.dumps(result), status=status,
+            resp = Response(json.dumps(result), status=200,
                                 mimetype="application/json")
             return resp
         elif command=="tapprovelist":
@@ -407,7 +547,7 @@ def login():
                 status=400
                 result={"success":"false","error":"maybe db select error"}
             db.close()
-            resp = Response(json.dumps(result), status=status,
+            resp = Response(json.dumps(result), status=200,
                                 mimetype="application/json")
             return resp
         elif command=="trejectlist":
@@ -428,9 +568,47 @@ def login():
                 status=400
                 result={"success":"false","error":"maybe db select error"}
             db.close()
-            resp = Response(json.dumps(result), status=status,
+            resp = Response(json.dumps(result), status=200,
                                 mimetype="application/json")
-            return resp    
+            return resp
+        elif command=="addStudentAlone":
+            number=postData['number']
+            name=postData['name']
+            cname=postData['cname']
+            db = pymysql.connect('localhost',dname, dpassword, dbase)
+            cursor = db.cursor()
+            try:
+                cursor.execute("select cno from course where cname='%s'"%(cname))
+                data=cursor.fetchone()
+                cno=data[0]
+                cursor.execute("select snumber from student where snumber='%s'"%(number))
+                data=cursor.fetchone()
+                if not data:
+                    try:
+                        cursor.execute("insert into student(snumber,sname) values ('%s','%s')"%(number,name))
+                        db.commit()
+                    except:
+                        result = {"success":"false","error":"insert  userInfo error"}
+                cursor.execute("select snumber from sc where snumber='%s' and cno='%s'"%(number,cno))
+                data=cursor.fetchone()
+                if not data:
+                    cursor.execute("insert into sc values ('%s','%s')"%(number,cno))
+                    db.commit()
+                    result={"success":"true"}
+                else:
+                    result={"success":"false","error":"该用户已存在"}
+            except:
+                result={"success":"false","error":"maybe db error"}
+            resp = Response(json.dumps(result), status=200,
+                                mimetype="application/json")
+            return resp
+        else:
+            status=400
+            result={"success":"false","error":"this command doesn't exist"}
+            resp = Response(json.dumps(result), status=200,
+                                mimetype="application/json")
+            return resp
+            
 if __name__ == '__main__':
     app.run(host='172.16.55.156', port=80, debug=True)
 
