@@ -5,11 +5,13 @@ import android.database.sqlite.SQLiteBindOrColumnIndexOutOfRangeException;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Adapter;
 import android.widget.AdapterView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -17,6 +19,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.navigation.NavController;
@@ -41,6 +45,7 @@ public class HomeFragment extends Fragment {
     private HomeViewModel homeViewModel;
     private RecyclerView mRecyclerView;
     private List<Course> courseList = new ArrayList<>();
+    FragmentManager fm;
     CourseAdapter myAdapter = new CourseAdapter(courseList);
 
     @SuppressLint("HandlerLeak")
@@ -68,8 +73,12 @@ public class HomeFragment extends Fragment {
             // viewHolder.getItemId();
             // viewHolder.getItemViewType();
             // viewHolder.itemView;
+            ConstraintLayout layout = (ConstraintLayout) mRecyclerView.getChildAt(position);
+            Bundle bundle = new Bundle();
+            TextView tvv = layout.findViewById(R.id.tv_content);
+            bundle.putString("name", tvv.getText().toString());
             NavController controller = Navigation.findNavController(view);
-            controller.navigate(R.id.action_navigation_home_to_navigation_sign);
+            controller.navigate(R.id.action_navigation_home_to_navigation_sign,bundle);
         }
     };
 
@@ -79,6 +88,7 @@ public class HomeFragment extends Fragment {
         homeViewModel = ViewModelProviders.of(this).get(HomeViewModel.class);
         View root = inflater.inflate(R.layout.fragment_home, container, false);
         mRecyclerView = root.findViewById(R.id.recyclerView);
+        fm = getFragmentManager();
 
         //连接数据库进行操作需要在主线程操作
         new Thread(new Runnable() {
@@ -86,14 +96,14 @@ public class HomeFragment extends Fragment {
             public void run() {
                 Connection conn = null;
                 conn =(Connection) DBOpenHelper.getConn();
-                String sql = "select cname,ctime from course ";
+                String sql = "select cname,ctime,cstart,cend from course ";
                 Statement st;
                 courseList.clear();
                 try {
                     st = (Statement) conn.createStatement();
                     ResultSet rs = st.executeQuery(sql);
                     while (rs.next()){
-                        Course test = new Course(rs.getString(1),rs.getString(2));
+                        Course test = new Course(rs.getString(1),"星期"+rs.getString(2)+"  "+"第"+rs.getString(3)+"-"+rs.getString(4)+"节");
                         Message msg = new Message();
                         msg.obj = test;
                         handler.sendMessage(msg);
@@ -106,11 +116,6 @@ public class HomeFragment extends Fragment {
                 }
             }
         }).start();
-
-//        Course course1 = new Course("软件理论与工程","周二/1234");
-//        Course course2 = new Course("大数据","周三/345");
-//        courseList.add(course1);
-//        courseList.add(course2);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this.getActivity());
         //layoutManager.setOrientation(RecyclerView.HORIZONTAL);

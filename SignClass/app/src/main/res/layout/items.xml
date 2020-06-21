@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="90dip"
-    android:background="#CCCAB1">
+    android:background="#58A9BD">
 
     <TextView
         android:id="@+id/tv_content"

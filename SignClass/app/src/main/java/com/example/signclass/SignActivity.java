@@ -125,6 +125,8 @@ public class SignActivity extends AppCompatActivity{
                             String sql = "insert into coursesign(cno,cnth,csigntimelast,csignposi,csigned,cnotsigned) values("+cno+","+cnth+","+ csigntimelast+","+csignposi+","+0+","+cnotsigned+")";
                             //Log.d("jincheng-sql", sql);
                             st.execute(sql);
+                            String sql2 = "update course set csigntime = (select csigntime from coursesign where cno = "+cno+" and cnth = "+cnth+"),cnth = "+cnth+" where cno = "+cno+"";
+                            st.execute(sql2);
                             st.close();
                             conn.close();
 
@@ -136,6 +138,8 @@ public class SignActivity extends AppCompatActivity{
                 }).start();
                 Toast toast=Toast.makeText(getApplicationContext(),"成功发起签到！",Toast.LENGTH_SHORT);
                 toast.show();
+
+
             }
         });
     }
@@ -245,6 +249,7 @@ public class SignActivity extends AppCompatActivity{
                     .longitude(location.getLongitude()).build();
             // 设置定位数据
             mBaiduMap.setMyLocationData(locData);
+
             // 当不需要定位图层时关闭定位图层
             //mBaiduMap.setMyLocationEnabled(false);
             if (isFirstLoc) {
@@ -257,6 +262,8 @@ public class SignActivity extends AppCompatActivity{
                 builder.target(ll).zoom(18.0f);
                 mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
 
+                //设置并显示中心点
+                setPosition2Center(mBaiduMap, location, true);
                 if (location.getLocType() == BDLocation.TypeGpsLocation) {
                     // GPS定位结果
                     Toast.makeText(SignActivity.this, location.getAddrStr(), Toast.LENGTH_SHORT).show();
@@ -279,6 +286,28 @@ public class SignActivity extends AppCompatActivity{
         }
     }
 
+
+    /**
+     * 设置中心点和添加marker
+     *
+     * @param map
+     * @param bdLocation
+     * @param isShowLoc
+     */
+    public void setPosition2Center(BaiduMap map, BDLocation bdLocation, Boolean isShowLoc) {
+        MyLocationData locData = new MyLocationData.Builder()
+                .accuracy(bdLocation.getRadius())
+                .direction(bdLocation.getRadius()).latitude(bdLocation.getLatitude())
+                .longitude(bdLocation.getLongitude()).build();
+        map.setMyLocationData(locData);
+
+        if (isShowLoc) {
+            LatLng ll = new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude());
+            MapStatus.Builder builder = new MapStatus.Builder();
+            builder.target(ll).zoom(18.0f);
+            map.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
+        }
+    }
 
     @Override
     protected void onStop() {

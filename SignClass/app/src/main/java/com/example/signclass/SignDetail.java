@@ -34,6 +34,7 @@ public class SignDetail extends AppCompatActivity {
     LinearLayoutManager layoutManager2 = new LinearLayoutManager(this);
     StuAdapter myAdapterSigned = new StuAdapter(studentListSigned);
     StuAdapter myAdapterUnsigned = new StuAdapter(studentListUnsigned);
+    int count = 0;
     @SuppressLint("HandlerLeak")
     private Handler handler = new Handler(){
         @Override
@@ -62,6 +63,31 @@ public class SignDetail extends AppCompatActivity {
         mRecyclerViewSigned = findViewById(R.id.rv_signed);
         mRecyclerViewUnsigned = findViewById(R.id.rv_unsigned);
 
+        //连接数据库进行操作需要在主线程操作
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Connection conn = null;
+                conn =(Connection) DBOpenHelper.getConn();
+                String sqlCount = "select count(*) from coursesign where cno = (select cno from course where cname = '"+getIntent().getStringExtra("cname")+"') ";
+                Log.d("jincheng-cnum", sqlCount);
+                Statement st;
+                studentListSigned.clear();
+                try {
+                    st = (Statement) conn.createStatement();
+                    ResultSet rs = st.executeQuery(sqlCount);
+                    while (rs.next()){
+                        count = rs.getInt(1);
+                        Log.d("jincheng-cnum", String.valueOf(count));
+                    }
+                    st.close();
+                    conn.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+
 
 
         //连接数据库进行操作需要在主线程操作
@@ -70,8 +96,8 @@ public class SignDetail extends AppCompatActivity {
             public void run() {
                 Connection conn = null;
                 conn =(Connection) DBOpenHelper.getConn();
-                String sqlSigned = "select student.sname,student.sno from student where student.snumber=(select snumber from studentsign where cnth = "+getIntent().getStringExtra("cno")+" and cno = (select cno from course where cname = '"+getIntent().getStringExtra("cname")+"')) ";
-                String sqlUnsigned = "select student.sname,student.sno from student,sc where student.snumber=sc.snumber  and sc.cno = (select cno from course where cname = '"+getIntent().getStringExtra("cname")+"') and student.snumber not in (select student.sno from student where student.snumber =(select snumber from studentsign where cnth = "+getIntent().getStringExtra("cno")+" and cno = (select cno from course where cname = '"+getIntent().getStringExtra("cname")+"'))) ";
+                String sqlSigned = "select student.sname,student.sno from student where student.snumber=(select snumber from studentsign where cnth = "+getIntent().getStringExtra("cnth")+" and cno = (select cno from course where cname = '"+getIntent().getStringExtra("cname")+"')) ";
+                String sqlUnsigned = "select student.sname,student.sno from student,sc where student.snumber=sc.snumber  and sc.cno = (select cno from course where cname = '"+getIntent().getStringExtra("cname")+"') and student.snumber not in (select student.sno from student where student.snumber =(select snumber from studentsign where cnth = "+getIntent().getStringExtra("cnth")+" and cno = (select cno from course where cname = '"+getIntent().getStringExtra("cname")+"'))) ";
 
 
                 Statement st;

@@ -65,7 +65,21 @@
       <option name="project" value="LOCAL" />
       <updated>1592039787303</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="rick的上传0613">
+      <created>1592039958746</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1592039958746</updated>
+    </task>
+    <task id="LOCAL-00005" summary="rick的上传-0613">
+      <created>1592040130500</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1592040130500</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -81,6 +95,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="rick的上传" />
-    <option name="LAST_COMMIT_MESSAGE" value="rick的上传" />
+    <MESSAGE value="rick的上传0613" />
+    <MESSAGE value="rick的上传-0613" />
+    <option name="LAST_COMMIT_MESSAGE" value="rick的上传-0613" />
   </component>
 </project>

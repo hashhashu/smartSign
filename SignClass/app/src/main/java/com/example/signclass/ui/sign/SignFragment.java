@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Handler;
 import android.os.Message;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -52,6 +53,7 @@ public class SignFragment extends Fragment {
     List<SignedRecord> recordList = new ArrayList<>();
     SignedRecordAdapter myAdapter ;
     LinearLayoutManager layoutManager = new LinearLayoutManager(this.getActivity());
+    String name = "";
 
     @SuppressLint("HandlerLeak")
     private Handler handler = new Handler(){
@@ -84,15 +86,9 @@ public class SignFragment extends Fragment {
             // This viewHolder will have all required values.
             RecyclerView.ViewHolder viewHolder = (RecyclerView.ViewHolder) view.getTag();
             int position = viewHolder.getAdapterPosition();
-
-             //viewHolder.getItemId();
-             //viewHolder.getItemViewType();
-//            NavController controller = Navigation.findNavController(view);
-//            controller.navigate(R.id.action_navigation_home_to_navigation_sign);
             //Log.d("jincheng-cnth", Integer.toString(position));
-//waiting for fix
             Intent intent = new Intent(getActivity(), SignDetail.class);
-            intent.putExtra("cno",position+1);
+            intent.putExtra("cnth",position);
             intent.putExtra("cname",(String) spinner.getSelectedItem());
             startActivity(intent);
         }
@@ -111,32 +107,69 @@ public class SignFragment extends Fragment {
         adapter = new ArrayAdapter<String>(this.getActivity(),android.R.layout.simple_spinner_item, allItems);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
-        //连接数据库进行操作需要在主线程操作
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Connection conn = null;
-                conn =(Connection) DBOpenHelper.getConn();
-                String sql = "select cname,ctime from course ";
-                Statement st;
-                allItems.clear();
-                try {
-                    st = (Statement) conn.createStatement();
-                    ResultSet rs = st.executeQuery(sql);
-                    while (rs.next()){
-                        Course test = new Course(rs.getString(1),rs.getString(2));
-                        Message msg = new Message();
-                        msg.obj = test;
-                        handler.sendMessage(msg);
-                        //courseList.add(test);
+        try {
+            name = getArguments().getString("name");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if(!TextUtils.isEmpty(name)) {
+            //连接数据库进行操作需要在主线程操作
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Connection conn = null;
+                    conn =(Connection) DBOpenHelper.getConn();
+                    String sql = "select cname,ctime from course where cname = '"+name+"' UNION ALL select cname,ctime from course where cname <> '"+name+"' ";
+                    Statement st;
+                    allItems.clear();
+                    try {
+                        st = (Statement) conn.createStatement();
+                        ResultSet rs = st.executeQuery(sql);
+                        while (rs.next()){
+                            Course test = new Course(rs.getString(1),rs.getString(2));
+                            Message msg = new Message();
+                            msg.obj = test;
+                            handler.sendMessage(msg);
+                            //courseList.add(test);
+                        }
+                        st.close();
+                        conn.close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
                     }
-                    st.close();
-                    conn.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
                 }
-            }
-        }).start();
+            }).start();
+        }
+        else
+        {
+            //连接数据库进行操作需要在主线程操作
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Connection conn = null;
+                    conn =(Connection) DBOpenHelper.getConn();
+                    String sql = "select cname,ctime from course ";
+                    Statement st;
+                    allItems.clear();
+                    try {
+                        st = (Statement) conn.createStatement();
+                        ResultSet rs = st.executeQuery(sql);
+                        while (rs.next()){
+                            Course test = new Course(rs.getString(1),rs.getString(2));
+                            Message msg = new Message();
+                            msg.obj = test;
+                            handler.sendMessage(msg);
+                            //courseList.add(test);
+                        }
+                        st.close();
+                        conn.close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
+        }
+
 
         btn_sign.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -165,19 +198,31 @@ public class SignFragment extends Fragment {
                         conn =(Connection) DBOpenHelper.getConn();
                         //UNDO sql select
                         String sql = "select coursesign.csigntime,coursesign.csigned,coursesign.cnotsigned,coursesign.cnth  from coursesign,course where coursesign.cno = course.cno and course.cname = '"+(String) spinner.getSelectedItem()+"' order by cnth desc ";
-                        Log.d("sqllllll", sql );
+                        Log.d("jincheng-sql", sql );
                         Statement st;
                         recordList.clear();
                         try {
                             st = (Statement) conn.createStatement();
                             ResultSet rs = st.executeQuery(sql);
-                            while (rs.next()){
-                                SignedRecord test = new SignedRecord(rs.getString(1),rs.getInt(2),rs.getInt(3));
+                            rs.last();
+                            Log.d("jincheng-row", String.valueOf(rs.getRow()));
+                            if(rs.getRow() == 0) {
+                                SignedRecord test = new SignedRecord("",null,null);
                                 Message msg = new Message();
                                 msg.obj = test;
                                 handler2.sendMessage(msg);
-                                //courseList.add(test);
                             }
+                            else{
+                                rs.beforeFirst();
+                                while (rs.next()){
+                                    SignedRecord test = new SignedRecord(rs.getString(1),rs.getInt(2),rs.getInt(3));
+                                    Message msg = new Message();
+                                    msg.obj = test;
+                                    handler2.sendMessage(msg);
+                                    //courseList.add(test);
+                                }
+                            }
+
                             st.close();
                             conn.close();
                         } catch (SQLException e) {
