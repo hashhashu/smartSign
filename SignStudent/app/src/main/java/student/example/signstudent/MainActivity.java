@@ -9,12 +9,14 @@ import android.widget.Button;
 
 public class MainActivity extends AppCompatActivity {
     private Button _btnRe,_btnLg,_btnAdd,_btnShow;
-
+    private String number;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        final NumberData data = (NumberData) getApplication();
+        number = data.getNumber();
+        Log.d("number",number);
         _btnLg = (Button)findViewById(R.id.btn_lg);
         _btnLg.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -50,5 +52,13 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
+        if(!number.equals("null")){
+            _btnAdd.setVisibility(View.VISIBLE);
+            _btnShow.setVisibility(View.VISIBLE);
+        }else {
+            _btnAdd.setVisibility(View.INVISIBLE);
+            _btnShow.setVisibility(View.INVISIBLE);
+        }
     }
 }

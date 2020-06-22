@@ -143,7 +143,8 @@ public class LoginActivity extends AppCompatActivity {
                     final NumberData data = (NumberData) getApplication();
                     data.setNumber(number);
                     Toast.makeText(LoginActivity.this,"登录成功！",Toast.LENGTH_LONG).show();
-                    finish();
+                    Intent intent = new Intent(LoginActivity.this,MainActivity.class);
+                    startActivity(intent);
                 }else{
                     Toast.makeText(LoginActivity.this,"用户名或密码错误，请重新输入！",Toast.LENGTH_LONG).show();
                 }

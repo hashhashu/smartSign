@@ -81,11 +81,13 @@ public class SignActivity extends AppCompatActivity {
                 if(isPosition){
                     String type = "ssign";
                     sendRequestWithHttpURLConection2(type,number,course);
-                    Intent intent = new Intent(SignActivity.this,LoadcourseActivity.class);
-                    startActivity(intent);
+//                    Intent intent = new Intent(SignActivity.this,LoadcourseActivity.class);
+//                    startActivity(intent);
+                    Toast.makeText(SignActivity.this,"签到成功！",Toast.LENGTH_SHORT).show();
+                    finish();
                 }else {
                     Toast.makeText(SignActivity.this,"当前位置不能签到！",Toast.LENGTH_SHORT).show();
-                    Toast.makeText(SignActivity.this,"签到成功！",Toast.LENGTH_SHORT).show();
+
 
                 }
             }
@@ -294,8 +296,9 @@ public class SignActivity extends AppCompatActivity {
                         }
 
                         public void onFinish() {
-                            Intent intent = new Intent(SignActivity.this, LoadcourseActivity.class);
-                            startActivity(intent);
+//                            Intent intent = new Intent(SignActivity.this, LoadcourseActivity.class);
+//                            startActivity(intent);
+                            finish();
                         }
                     };
                     //调用 CountDownTimer 对象的 start() 方法开始倒计时，也不涉及到线程处理

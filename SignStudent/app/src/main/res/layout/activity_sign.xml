@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#F1E9DE"
     tools:context=".SignActivity"
     android:orientation="vertical">
 
@@ -11,6 +12,7 @@
         android:id="@+id/tv_scname"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
         android:gravity="center"
         android:text="课程名称"
         android:textSize="30dp"/>
@@ -27,6 +29,7 @@
         android:id="@+id/tv_scdistance"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
         android:text="1000米"
         android:textSize="25dp"
         android:gravity="center"/>
@@ -42,9 +45,13 @@
 
     <Button
         android:id="@+id/btn_sign"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="150dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="150dp"
         android:layout_gravity="center"
+        android:background="@drawable/btnsharp"
+        android:textColor="@color/white"
+        android:textSize="20dp"
         android:text="签到"/>
 
 </LinearLayout>
