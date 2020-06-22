@@ -54,6 +54,7 @@ public class SignFragment extends Fragment {
     SignedRecordAdapter myAdapter ;
     LinearLayoutManager layoutManager = new LinearLayoutManager(this.getActivity());
     String name = "";
+    int count;
 
     @SuppressLint("HandlerLeak")
     private Handler handler = new Handler(){
@@ -86,9 +87,13 @@ public class SignFragment extends Fragment {
             // This viewHolder will have all required values.
             RecyclerView.ViewHolder viewHolder = (RecyclerView.ViewHolder) view.getTag();
             int position = viewHolder.getAdapterPosition();
-            //Log.d("jincheng-cnth", Integer.toString(position));
+            Log.d("jincheng-cnth", Integer.toString(position));
+
+
             Intent intent = new Intent(getActivity(), SignDetail.class);
-            intent.putExtra("cnth",position);
+            intent.putExtra("cnth",String.valueOf(position));
+            intent.putExtra("count",String.valueOf(count));
+            Log.d("jincheng-countsend", String.valueOf(count));
             intent.putExtra("cname",(String) spinner.getSelectedItem());
             startActivity(intent);
         }
@@ -112,6 +117,27 @@ public class SignFragment extends Fragment {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        //连接数据库进行操作需要在主线程操作
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Connection conn = null;
+                conn =(Connection) DBOpenHelper.getConn();
+                String sqlCount = "select count(*) from coursesign where cno = (select cno from course where cname = '"+(String) spinner.getSelectedItem()+"') ";
+                Statement st;
+                try {
+                    st = (Statement) conn.createStatement();
+                    ResultSet rs = st.executeQuery(sqlCount);
+                    while (rs.next()){
+                        count = rs.getInt(1);
+                    }
+                    st.close();
+                    conn.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
         if(!TextUtils.isEmpty(name)) {
             //连接数据库进行操作需要在主线程操作
             new Thread(new Runnable() {
@@ -184,11 +210,28 @@ public class SignFragment extends Fragment {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 
-//                SignedRecord record1 = new SignedRecord("2020/05/02 08:30",20,5);
-//                SignedRecord record2 = new SignedRecord("2020/05/09 08:30",28,5);
-//                recordList.add(record1);
-//                recordList.add(record2);
-//                Log.d("hlhupload", "in" );
+                //连接数据库进行操作需要在主线程操作
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Connection conn = null;
+                        conn =(Connection) DBOpenHelper.getConn();
+                        String sqlCount = "select count(*) from coursesign where cno = (select cno from course where cname = '"+(String) spinner.getSelectedItem()+"') ";
+                        Statement st;
+                        try {
+                            st = (Statement) conn.createStatement();
+                            ResultSet rs = st.executeQuery(sqlCount);
+                            while (rs.next()){
+                                count = rs.getInt(1);
+                                Log.d("jincheng-cnum", String.valueOf(count));
+                            }
+                            st.close();
+                            conn.close();
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
                 mRecyclerView.setAdapter(myAdapter);
                 //连接数据库进行操作需要在主线程操作
                 new Thread(new Runnable() {
