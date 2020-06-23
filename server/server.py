@@ -194,31 +194,35 @@ def login():
                 num=0
                 for line in cursor.fetchall():
                     cno=line[0]
-                    print(cno)
                     cursor.execute("select cname,ctime,cstart,cend,cnth from course where cno='%s'"%(cno))
                     data=cursor.fetchone()
                     cname=data[0]
                     ctime=data[1]
                     cstart=data[2]
                     cend=data[3]
-                    cnth=data[4]
-                    cursor.execute("select csigntimelast,csigntime from coursesign where cno='%s' and cnth='%s'"%(cno,cnth))
+                    cursor.execute("select cnth,csigntimelast,csigntime from coursesign where cno='%s' order by cnth desc"%(cno))
                     data=cursor.fetchone()
                     print(data)
-                    timelast=data[0]
-                    signstart=data[1]
-                    if not signstart:
-                        ongoing="false"
-                    else:
-                        signend=signstart+datetime.timedelta(minutes=timelast)
-                        now=datetime.datetime.now()
-                        print(now)
-                        print(signstart)
-                        print(signend)
-                        if now>=signstart and now<=signend:
-                            ongoing="true"
-                        else:
+                    if data:
+                        print(data)
+                        cnth=data[0]
+                        timelast=data[1]
+                        signstart=data[2]
+                        if not signstart:
                             ongoing="false"
+                        else:
+                            signend=signstart+datetime.timedelta(minutes=timelast)
+                            now=datetime.datetime.now()
+                            print("heelo")
+                            print(now)
+                            print(signstart)
+                            print(signend)
+                            if now>=signstart and now<=signend:
+                                ongoing="true"
+                            else:
+                                ongoing="false"
+                    else:
+                        ongoing="false"
                     if ctime<whatday:
                         newday=ctime-whatday+7
                     else:
@@ -245,7 +249,8 @@ def login():
             except:
                 status=400
                 result={"success":"false","error":"maybe db error"}
-            db.close() 
+            db.close()
+            print(result) 
             resp = Response(json.dumps(result,cls=DateEncoder), status=200,
                                 mimetype="application/json")
             return resp
@@ -277,6 +282,7 @@ def login():
                 status=400
                 result={"success":"false","error":"maybe db select error"}
             db.close()
+            print(result)
             resp = Response(json.dumps(result), status=200,
                                 mimetype="application/json")
             return resp
@@ -290,7 +296,7 @@ def login():
                 if data:
                     cno=data[0]
                     cnth=data[1]
-                    cursor.execute("select csignposi,csigntime,csigntimelast from coursesign where cno='%s' and cnth='%d'"%(cno,cnth))
+                    cursor.execute("select csignposi,csigntime,csigntimelast from coursesign where cno='%s' order by cnth desc"%(cno))
                     data=cursor.fetchone()
                     if data:
                         csignposi=data[0]
@@ -305,6 +311,7 @@ def login():
                 status=400
                 result={"success":"false","error":"maybe db select error"}
             db.close()
+            print(result)
             resp = Response(json.dumps(result,cls=DateEncoder), status=200,
                                 mimetype="application/json")
             return resp
@@ -316,11 +323,15 @@ def login():
             now=datetime.datetime.now()
             now = now.strftime("%Y-%m-%d %H:%M:%S")
             try:
-                cursor.execute("select cno,cnth from course where cname='%s'"%(course))
+                print("***************")
+                cursor.execute("select cno from course where cname='%s'"%(course))
                 data=cursor.fetchone()
+                print(data)
                 if data:
                     cno=data[0]
-                    cnth=data[1]
+                    cursor.execute("select cnth from coursesign where cno='%s' order by cnth desc"%(cno))
+                    data=cursor.fetchone()
+                    cnth=data[0]
                     cursor.execute("select cno from studentsign where cno='%s' and snumber='%s' and cnth='%d'"%(cno,number,cnth))
                     data=cursor.fetchone()
                     if not data:
@@ -340,6 +351,7 @@ def login():
             except:
                 status=400
                 result={"success":"false","error":"maybe db select error"}
+            print(result)
             db.close()
             resp = Response(json.dumps(result), status=200,
                                 mimetype="application/json")
